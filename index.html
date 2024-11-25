@@ -11,6 +11,28 @@
           Helvetica, Arial, sans-serif;
       }
 
+      #username-container {
+        display: flex;
+        justify-content: center;
+        align-items: center;
+      }
+
+      label {
+        font-weight: bold;
+        margin-right: 0.5rem;
+        font-size: 1rem;
+      }
+
+      #username {
+        padding: 0.5rem;
+        font-size: 1rem;
+        border: 1px solid #ccc;
+        border-radius: 5px;
+        outline: none;
+        flex-grow: 1;
+        max-width: 200px;
+      }
+
       #form {
         background: rgba(0, 0, 0, 0.15);
         padding: 0.25rem;
@@ -57,6 +79,10 @@
     </style>
   </head>
   <body>
+    <div id="username-container">
+      <label for="username">Username: </label>
+      <input type="text" id="username" placeholder="Anonymous" />
+    </div>
     <ul id="messages"></ul>
     <form id="form" action="">
       <input id="input" autocomplete="off" /><button>Send</button>
@@ -79,6 +105,7 @@
 
       const form = document.getElementById('form');
       const input = document.getElementById('input');
+      const username = document.getElementById('username');
       const messages = document.getElementById('messages');
       const toggleButton = document.getElementById('toggle-btn');
 
@@ -98,13 +125,20 @@
         e.preventDefault();
         if (input.value) {
           const clientOffset = `${socket.id}-${counter++}`;
-          socket.emit('chat message', input.value, clientOffset);
+          socket.emit(
+            'chat message',
+            input.value,
+            username.value || 'Anonymous',
+            clientOffset
+          );
         }
       });
 
-      socket.on('chat message', (msg, serverOffset) => {
+      socket.on('chat message', (msg, username, serverOffset) => {
+        const escapeHTML = (str) =>
+          str.replace(/</g, '&lt;').replace(/>/g, '&gt;');
         const item = document.createElement('li');
-        item.textContent = msg;
+        item.textContent = `${escapeHTML(username)}: ${escapeHTML(msg)}`;
         messages.appendChild(item);
         window.scrollTo(0, document.body.scrollHeight);
         socket.auth.serverOffset = serverOffset;

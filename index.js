@@ -36,14 +36,14 @@ async function main() {
     })
 
     io.on('connection', async (socket) => {
-        io.emit('connectDisconnect', '*User connected')
+        io.emit('connectDisconnect', `*User connected`)
 
         // Load existing messages and send them to the client
         const messages = await prisma.message.findMany({
             orderBy: { createdAt: 'asc' }
         });
 
-        socket.on('chat message', async (msg, clientOffset, callback) => {
+        socket.on('chat message', async (msg, username, clientOffset, callback) => {
             let newMessage;
             try {
                 // Store the message in the database
@@ -51,6 +51,7 @@ async function main() {
                     data: {
                         content: msg,
                         clientOffset: clientOffset,
+                        username: username,
                     },
                 });
             } catch (e) {
@@ -66,7 +67,7 @@ async function main() {
                 return;
             }
 
-            io.emit('chat message', msg, newMessage.id);
+            io.emit('chat message', msg, username, newMessage.id);
 
             // acknowledge the event
             callback();
@@ -76,12 +77,12 @@ async function main() {
             try {
                 const messages = await prisma.message.findMany({
                     where: { id: { gt: socket.handshake.auth.serverOffset || 0 } },
-                    select: { id: true, content: true }
+                    select: { id: true, content: true, username: true }
                 })
 
                 //  Emit the recovery messages
                 messages.forEach((message) => {
-                    socket.emit('chat message', message.content, message.id);
+                    socket.emit('chat message', message.content, message.username, message.id);
                 });
 
             } catch (e) {

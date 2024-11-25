@@ -16,6 +16,7 @@ datasource db {
 model Message {
   id Int @id @default(autoincrement())
   clientOffset String? @unique
+  username String 
   content String
   createdAt DateTime @default(now())
 }
