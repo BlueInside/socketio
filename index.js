@@ -58,7 +58,7 @@ async function main() {
                 // Check if the error is a unique constraint violation
                 if (e.code === 'P2002' && e.meta?.target?.includes('clientOffset')) {
                     // The message was already inserted, so we notify the client
-                    callback();
+                    callback({ status: 'rejected' });
                 } else {
                     // Log unexpected errors
                     console.error('Unexpected error:', e);
@@ -67,10 +67,10 @@ async function main() {
                 return;
             }
 
-            io.emit('chat message', msg, username, newMessage.id);
+            socket.broadcast.emit('chat message', msg, username, newMessage.id);
 
             // acknowledge the event
-            callback();
+            callback({ status: 'success', id: newMessage.id });
         });
 
         if (!socket.recovered) {

@@ -121,24 +121,39 @@
         }
       });
 
-      form.addEventListener('submit', (e) => {
+      form.addEventListener('submit', async (e) => {
         e.preventDefault();
         if (input.value) {
           const clientOffset = `${socket.id}-${counter++}`;
+
           socket.emit(
             'chat message',
             input.value,
             username.value || 'Anonymous',
-            clientOffset
+            clientOffset,
+            (err, serverResponse) => {
+              if (err) {
+                console.error(
+                  'Failed to get a valid acknowledgment from the server'
+                );
+              } else {
+                socket.auth.serverOffset = serverResponse.id;
+              }
+            }
           );
+
+          // Append the message locally immediately
+          const item = document.createElement('li');
+          item.textContent = `${username.value || 'Anonymous'}: ${input.value}`;
+          messages.appendChild(item);
+          window.scrollTo(0, document.body.scrollHeight);
+          input.value = '';
         }
       });
 
       socket.on('chat message', (msg, username, serverOffset) => {
-        const escapeHTML = (str) =>
-          str.replace(/</g, '&lt;').replace(/>/g, '&gt;');
         const item = document.createElement('li');
-        item.textContent = `${escapeHTML(username)}: ${escapeHTML(msg)}`;
+        item.textContent = `${username || 'Anonymous'}: ${msg}`;
         messages.appendChild(item);
         window.scrollTo(0, document.body.scrollHeight);
         socket.auth.serverOffset = serverOffset;
