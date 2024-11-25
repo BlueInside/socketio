@@ -109,6 +109,13 @@
         window.scrollTo(0, document.body.scrollHeight);
         socket.auth.serverOffset = serverOffset;
       });
+
+      // Displays message on user connect and disconnect
+      socket.on('connectDisconnect', (msg) => {
+        const item = document.createElement('li');
+        item.textContent = msg;
+        messages.appendChild(item);
+      });
     </script>
   </body>
 </html>

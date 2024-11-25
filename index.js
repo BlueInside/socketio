@@ -36,7 +36,7 @@ async function main() {
     })
 
     io.on('connection', async (socket) => {
-        console.log('a user connected');
+        io.emit('connectDisconnect', '*User connected')
 
         // Load existing messages and send them to the client
         const messages = await prisma.message.findMany({
@@ -90,6 +90,7 @@ async function main() {
         }
 
         socket.on('disconnect', () => {
+            io.emit('connectDisconnect', '*User disconnected')
             console.log('User disconnected');
         })
     })
