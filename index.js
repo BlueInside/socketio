@@ -25,20 +25,33 @@ io.on('connection', async (socket) => {
         orderBy: { createdAt: 'asc' }
     });
 
-    socket.on('chat message', async (msg) => {
+    socket.on('chat message', async (msg, clientOffset, callback) => {
         let newMessage;
         try {
             // Store the message in the database
             newMessage = await prisma.message.create({
                 data: {
                     content: msg,
+                    clientOffset: clientOffset,
                 },
             });
         } catch (e) {
-            console.error('Failed to save message:', e)
+            // Check if the error is a unique constraint violation
+            if (e.code === 'P2002' && e.meta?.target?.includes('clientOffset')) {
+                // The message was already inserted, so we notify the client
+                callback();
+            } else {
+                // Log unexpected errors
+                console.error('Unexpected error:', e);
+                // Let the client retry
+            }
+            return;
         }
 
         io.emit('chat message', msg, newMessage.id);
+
+        // acknowledge the event
+        callback();
     });
 
     if (!socket.recovered) {
