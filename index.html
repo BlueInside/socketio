@@ -84,12 +84,34 @@
       <input type="text" id="username" placeholder="Anonymous" />
     </div>
     <ul id="messages"></ul>
+    <div
+      id="typing-indicator"
+      style="display: none; font-style: italic; color: gray"
+    ></div>
+
     <form id="form" action="">
-      <input id="input" autocomplete="off" /><button>Send</button>
+      <input id="input" />
+      <button>Send</button>
       <button id="toggle-btn">Disconnect</button>
     </form>
 
     <script src="/socket.io/socket.io.js"></script>
+    <script>
+      function debounce(func) {
+        let skip = false;
+
+        return (...args) => {
+          if (skip) return;
+
+          func(...args);
+          skip = true;
+
+          setTimeout(() => {
+            skip = false;
+          }, 2000);
+        };
+      }
+    </script>
     <script>
       let counter = 0;
 
@@ -108,6 +130,7 @@
       const username = document.getElementById('username');
       const messages = document.getElementById('messages');
       const toggleButton = document.getElementById('toggle-btn');
+      const typingIndicator = document.getElementById('typing-indicator');
 
       toggleButton.addEventListener('click', (e) => {
         e.preventDefault();
@@ -121,8 +144,23 @@
         }
       });
 
+      input.addEventListener(
+        'input',
+        debounce((e) => {
+          e.preventDefault();
+          socket.emit(
+            'typing',
+            username.value || 'Anonymous',
+            (err, serverResponse) => {
+              if (err) console.error('Typing event not acknowledged.');
+            }
+          );
+        })
+      );
+
       form.addEventListener('submit', async (e) => {
         e.preventDefault();
+        socket.emit('stop typing');
         if (input.value) {
           const clientOffset = `${socket.id}-${counter++}`;
 
@@ -164,6 +202,21 @@
         const item = document.createElement('li');
         item.textContent = msg;
         messages.appendChild(item);
+      });
+
+      socket.on('user typing', (username) => {
+        typingIndicator.textContent = `${username} is typing...`;
+        typingIndicator.style.display = 'block';
+
+        // Hide the typing indicator after a timeout (e.g., 2 seconds)
+        clearTimeout(typingIndicator.timeout);
+        typingIndicator.timeout = setTimeout(() => {
+          typingIndicator.style.display = 'none';
+        }, 2000);
+      });
+
+      socket.on('user stop typing', () => {
+        typingIndicator.style.display = 'none';
       });
     </script>
   </body>
