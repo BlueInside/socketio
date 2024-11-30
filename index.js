@@ -48,6 +48,15 @@ io.on('connection', async (socket) => {
         callback();
     })
 
+    socket.on('username change', (username, callback) => {
+        console.log('Username changed')
+        onlineUsers.set(socket.id, username);
+        console.log(`${username} added`);
+
+        io.emit('updateUsers', Array.from(onlineUsers.values()));
+        callback();
+    })
+
     socket.on('typing', (username, callback) => {
         counter++
         socket.broadcast.emit('user typing', username);
