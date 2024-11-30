@@ -34,8 +34,19 @@ app.get('/', (req, res) => {
     res.sendFile(join(__dirname, 'index.html'));
 })
 
+const onlineUsers = new Map();
+
 io.on('connection', async (socket) => {
-    console.log(`New connection: ${socket.id}`);
+
+    // Handle user connection
+    socket.on('userConnected', (username, callback) => {
+        console.log('Connected user!')
+        onlineUsers.set(socket.id, username);
+        console.log(`${username} connected`);
+
+        io.emit('updateUsers', Array.from(onlineUsers.values()));
+        callback();
+    })
 
     socket.on('typing', (username, callback) => {
         counter++
@@ -108,9 +119,14 @@ io.on('connection', async (socket) => {
         }
     }
 
+    // Handle user disconnection
     socket.on('disconnect', () => {
-        io.emit('connectDisconnect', '*User disconnected')
-        console.log('User disconnected');
+        const username = onlineUsers.get(socket.id);
+        onlineUsers.delete(socket.id); // Remove from online users
+        console.log(`${username} disconnected`);
+
+        // Broadcast updated user list
+        io.emit('updateUsers', Array.from(onlineUsers.values()));
     })
 
 
