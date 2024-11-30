@@ -83,6 +83,10 @@
       <label for="username">Username: </label>
       <input type="text" id="username" placeholder="Anonymous" />
     </div>
+    <div>
+      <h3>Online Users</h3>
+      <ul id="online-users" style="list-style: none; padding: 0"></ul>
+    </div>
     <ul id="messages"></ul>
     <div
       id="typing-indicator"
@@ -140,9 +144,36 @@
           socket.disconnect();
         } else {
           toggleButton.innerText = 'Disconnect';
+          socket.emit(
+            'userConnected',
+            username.value || 'Anonymous',
+            (err, serverResponse) => {
+              if (err) console.error('User connect event not acknowledged.');
+            }
+          );
           socket.connect();
         }
       });
+
+      // Listen for 'updateUsers' to update the online user list
+      socket.on('updateUsers', (users) => {
+        const onlineUsersList = document.getElementById('online-users');
+        onlineUsersList.innerHTML = ''; // Clear the existing list
+
+        users.forEach((user) => {
+          const userItem = document.createElement('li');
+          userItem.textContent = user;
+          onlineUsersList.appendChild(userItem);
+        });
+      });
+
+      socket.emit(
+        'userConnected',
+        username.value || 'Anonymous',
+        (err, serverResponse) => {
+          if (err) console.error('User connect event not acknowledged.');
+        }
+      );
 
       input.addEventListener(
         'input',
