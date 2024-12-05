@@ -48,6 +48,10 @@ io.on('connection', async (socket) => {
         callback();
     })
 
+
+    // Implement private message
+    socket.on('privateMessage', ({ recipient, message, sender }))
+
     socket.on('username change', (username, callback) => {
         console.log('Username changed')
         onlineUsers.set(socket.id, username);
