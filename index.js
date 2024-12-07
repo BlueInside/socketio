@@ -53,8 +53,15 @@ io.on('connection', async (socket) => {
 
 
     // Handle private messages
-    socket.on('privateMessage', ({ recipient, message, sender }) => {
-        const recipientSocketId = onlineUsers.get(recipient)
+    socket.on('privateMessage', ({ recipientId, message }, callback) => {
+        const senderId = socket.id;
+        const senderUsername = onlineUsers.get(senderId);
+        console.log('RECEIVED AND EMMITED MESSAGE! ', `${recipientId}, ${message}, ${senderId}`)
+        io.to(recipientId).emit('privateMessage', {
+            senderId, message, senderUsername
+        })
+
+        callback();
     })
 
     // Implement private message
