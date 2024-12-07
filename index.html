@@ -76,6 +76,104 @@
       #messages > li:nth-child(odd) {
         background: #efefef;
       }
+
+      .clickable {
+        cursor: pointer;
+      }
+
+      .pm-window {
+        position: fixed;
+        bottom: 40px;
+        top: 50%;
+        right: 20px;
+        background: #f9f9f9;
+        border: 1px solid #ccc;
+        border-radius: 8px;
+        box-shadow: 0 2px 10px rgba(0, 0, 0, 0.1);
+        display: flex;
+        flex-direction: column;
+        font-family: Arial, sans-serif;
+        overflow: hidden;
+        z-index: 10000;
+      }
+
+      .pm-header {
+        background: #eee;
+        padding: 8px;
+        display: flex;
+        justify-content: space-between;
+        align-items: center;
+        font-weight: bold;
+        border-bottom: 1px solid #ccc;
+      }
+
+      .pm-close-btn {
+        background: none;
+        border: none;
+        font-size: 16px;
+        cursor: pointer;
+        font-weight: bold;
+      }
+
+      .pm-messages {
+        list-style: none;
+        margin: 0;
+        padding: 8px;
+        flex: 1;
+        overflow-y: auto;
+        background: #fff;
+      }
+
+      .pm-messages li {
+        margin-bottom: 5px;
+        padding: 5px;
+        border-radius: 5px;
+      }
+
+      .pm-messages li.sent {
+        background: #d0f0d0;
+      }
+
+      .pm-messages li.received {
+        background: #f0f0f0;
+      }
+
+      .pm-input-area {
+        display: flex;
+        padding: 8px;
+        border-top: 1px solid #ccc;
+      }
+
+      .pm-input-area input {
+        flex: 1;
+        padding: 5px;
+        margin-right: 5px;
+        border: 1px solid #ccc;
+        border-radius: 4px;
+      }
+
+      .pm-send-btn,
+      .pm-cancel-btn {
+        background: #007bff;
+        border: none;
+        color: #fff;
+        padding: 5px 10px;
+        border-radius: 4px;
+        cursor: pointer;
+        margin-left: 5px;
+      }
+
+      .pm-cancel-btn {
+        background: #dc3545;
+      }
+
+      .pm-send-btn:hover {
+        background: #0056b3;
+      }
+
+      .pm-cancel-btn:hover {
+        background: #c82333;
+      }
     </style>
   </head>
   <body>
@@ -187,8 +285,141 @@
           userItem.textContent = user.username;
           userItem.dataset.id = user.id;
 
+          // Don't allow user to send PM to himself
+          if (user.id !== socket.id) {
+            userItem.className = 'clickable';
+            userItem.addEventListener('click', () => {
+              // OPEN PM WINDOW
+              openPMWindow(user.username, user.id);
+            });
+          }
+
           onlineUsersList.appendChild(userItem);
         });
+      });
+
+      function openPMWindow(recipientUsername, recipientId) {
+        // Check if a PM window for this recipient already exists
+        const existingWindow = document.getElementById(
+          `pm-window-${recipientId}`
+        );
+
+        if (existingWindow) {
+          existingWindow.style.display = 'flex'; // Show if hidden
+          const title = existingWindow.querySelector('div.pm-header > span');
+          title.innerText = `Chat with ${recipientUsername}`;
+
+          return;
+        }
+
+        // Create the PM window container
+        const pmWindow = document.createElement('div');
+        pmWindow.id = `pm-window-${recipientId}`;
+        pmWindow.className = 'pm-window';
+
+        // Create header
+        const header = document.createElement('div');
+        header.className = 'pm-header';
+
+        const title = document.createElement('span');
+        title.textContent = `Chat with ${recipientUsername}`;
+        header.appendChild(title);
+
+        const closeBtn = document.createElement('button');
+        closeBtn.textContent = '×';
+        closeBtn.className = 'pm-close-btn';
+        closeBtn.addEventListener('click', () => closePMWindow(recipientId));
+        header.appendChild(closeBtn);
+
+        pmWindow.appendChild(header);
+
+        // Create messages list
+        const messagesList = document.createElement('ul');
+        messagesList.className = 'pm-messages';
+        messagesList.id = `pm-messages-${recipientId}`;
+        pmWindow.appendChild(messagesList);
+
+        // Create input area
+        const inputArea = document.createElement('div');
+        inputArea.className = 'pm-input-area';
+
+        const inputField = document.createElement('input');
+        inputField.type = 'text';
+        inputField.id = `pm-input-${recipientId}`;
+        inputField.placeholder = 'Type your message...';
+        inputArea.appendChild(inputField);
+
+        const sendBtn = document.createElement('button');
+        sendBtn.textContent = 'Send';
+        sendBtn.className = 'pm-send-btn';
+        sendBtn.addEventListener('click', () => {
+          const message = inputField.value.trim();
+          if (message) {
+            sendPrivateMessage(recipientId, recipientUsername, message);
+            appendPMMessage(`You: ${message}`, recipientId, true);
+            inputField.value = '';
+          }
+        });
+        inputArea.appendChild(sendBtn);
+
+        const cancelBtn = document.createElement('button');
+        cancelBtn.textContent = 'Cancel';
+        cancelBtn.className = 'pm-cancel-btn';
+        cancelBtn.addEventListener('click', () => closePMWindow(recipientId));
+        inputArea.appendChild(cancelBtn);
+
+        pmWindow.appendChild(inputArea);
+
+        // Append the PM window to the document body
+        document.body.appendChild(pmWindow);
+      }
+
+      // Helper to append messages
+      function appendPMMessage(text, recipientId) {
+        const messagesList = document.getElementById(
+          `pm-messages-${recipientId}`
+        );
+        if (!messagesList) return;
+
+        const li = document.createElement('li');
+        li.textContent = text;
+
+        messagesList.appendChild(li);
+      }
+
+      // Helper to close the PM window
+      function closePMWindow(recipientId) {
+        const pmWindow = document.getElementById(`pm-window-${recipientId}`);
+        if (pmWindow) {
+          pmWindow.style.display = 'none';
+        }
+      }
+
+      // Help[er to send PM
+      function sendPrivateMessage(recipientId, recipientUsername, message) {
+        socket.emit(
+          'privateMessage',
+          {
+            recipientId: recipientId,
+            recipientUsername: recipientUsername,
+            message: message,
+          },
+          (err, serverResponse) => {
+            if (err) {
+              console.error('Private message event not acknowledged!');
+            }
+          }
+        );
+      }
+
+      socket.on('privateMessage', ({ senderId, message, senderUsername }) => {
+        const pmWindow = document.getElementById(`pm-window-${senderId}`);
+
+        if (pmWindow) {
+          appendPMMessage(`${senderUsername}: ${message}`, senderId);
+        } else {
+          openPMWindow();
+        }
       });
 
       socket.emit(
