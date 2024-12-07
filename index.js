@@ -44,20 +44,27 @@ io.on('connection', async (socket) => {
         onlineUsers.set(socket.id, username);
         console.log(`${username} connected`);
 
-        io.emit('updateUsers', Array.from(onlineUsers.values()));
+        const usersDetails = Array.from(onlineUsers.entries()).map(([id, username]) => ({ id, username }))
+
+        io.emit('updateUsers', usersDetails);
         callback();
     })
 
 
+
+    // Handle private messages
+    socket.on('privateMessage', ({ recipient, message, sender }) => {
+        const recipientSocketId = onlineUsers.get(recipient)
+    })
+
     // Implement private message
-    socket.on('privateMessage', ({ recipient, message, sender }))
 
     socket.on('username change', (username, callback) => {
-        console.log('Username changed')
         onlineUsers.set(socket.id, username);
-        console.log(`${username} added`);
 
-        io.emit('updateUsers', Array.from(onlineUsers.values()));
+        const usersDetails = Array.from(onlineUsers.entries()).map(([id, username]) => ({ id, username }))
+
+        io.emit('updateUsers', usersDetails);
         callback();
     })
 
@@ -138,8 +145,10 @@ io.on('connection', async (socket) => {
         onlineUsers.delete(socket.id); // Remove from online users
         console.log(`${username} disconnected`);
 
+        const usersDetails = Array.from(onlineUsers.entries()).map(([id, username]) => ({ id, username }))
+
         // Broadcast updated user list
-        io.emit('updateUsers', Array.from(onlineUsers.values()));
+        io.emit('updateUsers', usersDetails);
     })
 
 

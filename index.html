@@ -176,6 +176,7 @@
           );
         }, 3000)
       );
+
       // Listen for 'updateUsers' to update the online user list
       socket.on('updateUsers', (users) => {
         const onlineUsersList = document.getElementById('online-users');
@@ -183,7 +184,9 @@
 
         users.forEach((user) => {
           const userItem = document.createElement('li');
-          userItem.textContent = user;
+          userItem.textContent = user.username;
+          userItem.dataset.id = user.id;
+
           onlineUsersList.appendChild(userItem);
         });
       });
