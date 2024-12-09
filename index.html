@@ -289,6 +289,8 @@
           if (user.id !== socket.id) {
             userItem.className = 'clickable';
             userItem.addEventListener('click', () => {
+              // Close all actually open windows
+              closeAllPMWindows();
               // OPEN PM WINDOW
               openPMWindow(user.username, user.id);
             });
@@ -297,6 +299,14 @@
           onlineUsersList.appendChild(userItem);
         });
       });
+
+      // Selects all windows and hide them
+      function closeAllPMWindows() {
+        const allPMWindows = document.querySelectorAll('.pm-window');
+        allPMWindows.forEach((window) => {
+          window.style.display = 'none';
+        });
+      }
 
       function openPMWindow(recipientUsername, recipientId) {
         // Check if a PM window for this recipient already exists
