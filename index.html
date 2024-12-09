@@ -303,8 +303,11 @@
           userItem.textContent = `${user.username}`;
           userItem.dataset.id = user.id;
 
+          createPMWindow(user.username, user.id);
+
           // Don't allow user to send PM to himself
           if (user.id !== socket.id) {
+            // Create chat for other users
             userItem.className = 'clickable';
             userItem.addEventListener('click', () => {
               // Close all actually open windows
@@ -321,7 +324,7 @@
       // Helper function to updateUserListUnreadCount
       function updateUserListUnreadCount(senderId, senderUnreadCount) {
         if (senderUnreadCount > 0) {
-          const onlineUser = document.querySelector(`[data-id=${senderId}]`);
+          const onlineUser = document.querySelector(`[data-id="${senderId}"]`);
           const currentUsername = onlineUser.innerText.split(' ')[0];
           onlineUser.innerText = `${currentUsername} (${senderUnreadCount})`;
         }
@@ -347,11 +350,23 @@
           title.innerText = `Chat with ${recipientUsername}`;
           return;
         }
+      }
+
+      // Helper function to create pm containers
+      function createPMWindow(recipientUsername, recipientId) {
+        // Check if window already exists
+        const existingWindow = document.getElementById(
+          `pm-window-${recipientId}`
+        );
+
+        // Return if exist
+        if (existingWindow) return;
 
         // Create the PM window container
         const pmWindow = document.createElement('div');
         pmWindow.id = `pm-window-${recipientId}`;
         pmWindow.className = 'pm-window';
+        pmWindow.style.display = 'none';
 
         // Create header
         const header = document.createElement('div');
@@ -392,7 +407,7 @@
           const message = inputField.value.trim();
           if (message) {
             sendPrivateMessage(recipientId, recipientUsername, message);
-            appendPMMessage(`You: ${message}`, recipientId, true);
+            appendPMMessage(`You: ${message}`, recipientId);
             inputField.value = '';
           }
         });
@@ -411,14 +426,18 @@
       }
 
       // Helper to append messages
-      function appendPMMessage(text, recipientId) {
+      function appendPMMessage(text, recipientId, receiver = false) {
         const messagesList = document.getElementById(
           `pm-messages-${recipientId}`
         );
         if (!messagesList) return;
-
+        console.log(receiver);
         const li = document.createElement('li');
-        li.classList.add('pm-sent-message');
+        if (receiver) {
+          li.classList.add('pm-received-message');
+        } else {
+          li.classList.add('pm-sent-message');
+        }
         li.textContent = text;
 
         messagesList.appendChild(li);
@@ -452,13 +471,15 @@
       socket.on('privateMessage', ({ senderId, message, senderUsername }) => {
         const pmWindow = document.getElementById(`pm-window-${senderId}`);
         console.log('RECEIVED MESSAGE FROM ', senderUsername);
+
         // Display next to username that some private message was received
         const unreadMessages = unreadCounts.get(senderId) || 0;
         unreadCounts.set(senderId, unreadMessages + 1);
         updateUserListUnreadCount(senderId, unreadCounts.get(senderId));
         // Appends those messages
+        const messageWithUsername = `${senderUsername}: ${message}`;
 
-        // Keep track of unread messages
+        appendPMMessage(messageWithUsername, senderId, true);
         // When user opens clicks on username reset count of unread messages.
       });
 
