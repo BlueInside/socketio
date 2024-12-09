@@ -323,10 +323,18 @@
 
       // Helper function to updateUserListUnreadCount
       function updateUserListUnreadCount(senderId, senderUnreadCount) {
+        const existingWindow = document.getElementById(`pm-window-${senderId}`);
+
         if (senderUnreadCount > 0) {
           const onlineUser = document.querySelector(`[data-id="${senderId}"]`);
           const currentUsername = onlineUser.innerText.split(' ')[0];
           onlineUser.innerText = `${currentUsername} (${senderUnreadCount})`;
+        }
+
+        if (senderUnreadCount == 0 || existingWindow.style.display === 'flex') {
+          const onlineUser = document.querySelector(`[data-id="${senderId}"]`);
+          const currentUsername = onlineUser.innerText.split(' ')[0];
+          onlineUser.innerText = `${currentUsername}`;
         }
       }
 
@@ -348,6 +356,11 @@
           existingWindow.style.display = 'flex'; // Show if hidden
           const title = existingWindow.querySelector('div.pm-header > span');
           title.innerText = `Chat with ${recipientUsername}`;
+          unreadCounts.set(recipientId, 0);
+          console.log(unreadCounts.get(recipientId));
+          console.log(recipientId);
+
+          updateUserListUnreadCount(recipientId, unreadCounts.get(recipientId));
           return;
         }
       }
