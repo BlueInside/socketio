@@ -242,6 +242,9 @@
         retries: 3,
       });
 
+      const unreadCounts = new Map();
+      const users = [];
+
       const form = document.getElementById('form');
       const input = document.getElementById('input');
       const username = document.getElementById('username');
@@ -284,12 +287,20 @@
 
       // Listen for 'updateUsers' to update the online user list
       socket.on('updateUsers', (users) => {
+        users = users;
+        displayAllUsersAndAttachEvents(users);
+      });
+
+      // Helper function to display all users
+      function displayAllUsersAndAttachEvents(users) {
         const onlineUsersList = document.getElementById('online-users');
         onlineUsersList.innerHTML = ''; // Clear the existing list
 
         users.forEach((user) => {
           const userItem = document.createElement('li');
-          userItem.textContent = user.username;
+          unreadCounts.set(user.id, 0);
+
+          userItem.textContent = `${user.username}`;
           userItem.dataset.id = user.id;
 
           // Don't allow user to send PM to himself
@@ -305,7 +316,16 @@
 
           onlineUsersList.appendChild(userItem);
         });
-      });
+      }
+
+      // Helper function to updateUserListUnreadCount
+      function updateUserListUnreadCount(senderId, senderUnreadCount) {
+        if (senderUnreadCount > 0) {
+          const onlineUser = document.querySelector(`[data-id=${senderId}]`);
+          const currentUsername = onlineUser.innerText.split(' ')[0];
+          onlineUser.innerText = `${currentUsername} (${senderUnreadCount})`;
+        }
+      }
 
       // Selects all windows and hide them
       function closeAllPMWindows() {
@@ -325,7 +345,6 @@
           existingWindow.style.display = 'flex'; // Show if hidden
           const title = existingWindow.querySelector('div.pm-header > span');
           title.innerText = `Chat with ${recipientUsername}`;
-
           return;
         }
 
@@ -432,12 +451,15 @@
 
       socket.on('privateMessage', ({ senderId, message, senderUsername }) => {
         const pmWindow = document.getElementById(`pm-window-${senderId}`);
+        console.log('RECEIVED MESSAGE FROM ', senderUsername);
+        // Display next to username that some private message was received
+        const unreadMessages = unreadCounts.get(senderId) || 0;
+        unreadCounts.set(senderId, unreadMessages + 1);
+        updateUserListUnreadCount(senderId, unreadCounts.get(senderId));
+        // Appends those messages
 
-        if (pmWindow) {
-          appendPMMessage(`${senderUsername}: ${message}`, senderId);
-        } else {
-          openPMWindow();
-        }
+        // Keep track of unread messages
+        // When user opens clicks on username reset count of unread messages.
       });
 
       socket.emit(
