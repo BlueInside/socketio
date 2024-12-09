@@ -77,6 +77,13 @@
         background: #efefef;
       }
 
+      .pm-sent-message {
+        background-color: aliceblue;
+      }
+
+      .pm-received-message {
+        background: antiquewhite;
+      }
       .clickable {
         cursor: pointer;
       }
@@ -392,6 +399,7 @@
         if (!messagesList) return;
 
         const li = document.createElement('li');
+        li.classList.add('pm-sent-message');
         li.textContent = text;
 
         messagesList.appendChild(li);
